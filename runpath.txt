@@ -1,0 +1,28 @@
+# SBCL 설치
+
+다운로드 URL : https://www.sbcl.org/platform-table.html
+
+우분투 : sudo apt install sbcl
+
+# lisp 다운로드 및 패키지 설치
+
+curl -O https://beta.quicklisp.org/quicklisp.lisp
+
+sbcl --load quicklisp.lisp
+
+# 설치 중 문구
+
+(quicklisp-quickstart:install :path "/home/zento/test/quicklisp/")
+
+(ql:add-to-init-file)
+
+# 패키지 설치
+
+sbcl --quit --load quicklisp/setup.lisp --eval "(ql:quickload '(:ningle :djula :dexador :cl-json))"
+
+# 현재는 추가되어 있으며 필요시 다운로드하여 교체
+http://act-r.psy.cmu.edu/actr7.x/actr7.x.zip 다운로드 및 wde/usability/extend 폴더아래 추가
+
+
+# 실행 명령
+sbcl --load "quicklisp/setup.lisp" --load "wde/usability/extend/load-act-r.lisp" --load "wde/usability/extend/usability/system_interface.lisp"

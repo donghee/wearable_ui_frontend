@@ -1,0 +1,227 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 
+;;; Author      : Hyungseok Oh
+;;; Address     : Cognitive Ergonomic Lab.
+;;;             : Department of Industrial Engineering 
+;;;             : Korea University
+;;; 
+;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 
+;;; Filename    : wearable-device-module.lisp
+;;; Version     : 0.1
+;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; 2023.10.18
+;;; ** Initial creation of the wearable device module
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;; Module to support parameters and device internals.
+
+(defstruct wearable-module
+  busy
+  error
+  exec-time-data
+  gait-force-rate
+  gait-shape
+  gait-scale
+  gait-mode
+  (lock (bt:make-recursive-lock "wearable"))
+  )
+
+
+(defun create-wearable-module (model-name)
+  (declare (ignore model-name))
+  (make-wearable-module))
+
+(defun reset-wearable-module (m)
+  (declare (ignore m))
+  ;initial code
+  )
+
+(defun delete-wearable-module (x)
+  (declare (ignore x)))
+
+(defun wearable-module-params (wearable param)
+  (if (consp param)
+    (case (car param)
+      (:set-gait-force-rate
+       (setf (wearable-module-gait-force-rate wearable) (cdr param)))
+      (:set-gait-scale
+       (setf (wearable-module-gait-scale wearable) (cdr param)))
+      (:set-wearable-gait-mode
+       (setf (wearable-module-gait-mode wearable) (cdr param)))
+      (:set-data-for-perform-time
+       (setf (wearable-module-exec-time-data wearable) (cdr param)))
+      )
+    (case param
+      (:set-gait-force-rate
+       (wearable-module-gait-force-rate wearable))
+      (:set-gait-scale
+       (wearable-module-gait-scale wearable))
+      (:set-wearable-gait-mode
+       (wearable-module-gait-mode wearable))
+      (:set-data-for-perform-time
+       (wearable-module-exec-time-data wearable))
+      )))
+
+
+(defun wearable-module-queries (wearable buffer query value)
+  (case query
+    (state
+     (case value
+       (busy (wearable-module-busy wearable))
+       (free (not (wearable-module-busy wearable)))
+       (error (wearable-module-error wearable))
+       (t (print-warning "Bad state query to the ~s buffer" buffer))))
+    (t (print-warning "Invalid query ~s to the ~s buffer" query buffer))))
+
+
+
+(define-module-fct 'wearable
+                   '(wearable-device) 
+  (list (define-parameter :set-gait-force-rate 
+               :documentation 
+                  "set gait force rate (percentage)"
+               :default-value 10
+               :valid-test 'nonneg
+               :warning "Non-negative number"
+               :owner t)
+	(define-parameter :set-gait-scale
+               :documentation 
+                  "set scale parameter of gamma function for gait; The scale parameter can be set to 1 or another empirical value."
+               :default-value 1.0
+               :valid-test 'nonneg
+               :warning "Non-negative number"
+               :owner t)
+	(define-parameter :set-wearable-gait-mode 
+               :documentation 
+                  "set mode of gait movements (t: fixed)"
+               :default-value nil
+               :valid-test 'tornil
+               :warning "T or nil"
+               :owner t)
+	(define-parameter :set-data-for-perform-time 
+               :documentation 
+                  "set performance time data"
+               :default-value 10
+               :valid-test 'nonneg
+               :warning "Non-negative number"
+               :owner t)
+        )
+
+   :query 'wearable-module-queries
+   :version "1.0a1"
+   :documentation "gait module for wearable device"
+   :creation 'create-wearable-module
+   :reset 'reset-wearable-module 
+   :delete 'delete-wearable-module
+   :params 'wearable-module-params
+   )
+
+
+
+(defun start-device-for-gait ()
+  (let* ((gait-mod (get-module wearable))
+	 (dev 'gait)
+	 (gamma-scale (wearable-module-gait-scale gait-mod))
+	 (error-rate (wearable-module-gait-force-rate gait-mod))
+	 (time-data (wearable-module-exec-time-data gait-mod))
+	 (next-time 0))
+	
+
+    (schedule-event-relative (predict-next-wearable-error-time time-data error-rate gamma-scale)
+			     'set-error-for-wearable-device
+			     :params (list gait-mod dev))
+    ))
+
+(add-act-r-command "start-device-for-gait" 'start-device-for-gait)
+
+
+(defun set-error-for-gait-device ()
+  (let* ((wearable-mod (get-module wearable))
+	 (dev 'gait)
+	 (gamma-scale (wearable-module-gait-scale wearable-mod))
+	 (error-rate (wearable-module-gait-force-rate wearable-mod))
+	 (time-data (wearable-module-exec-time-data wearable-mod))
+	 (next-time 0))
+
+    (setf (wearable-module-error wearable-mod) nil)
+
+    (unless (> error-rate 0) (setf error-rate 1))
+    
+    (setf next-time (predict-next-wearable-error-time time-data error-rate gamma-scale))
+
+    (schedule-event-relative next-time
+			     'set-error-for-wearable-device
+			     :params (list wearable-mod dev))
+    ))
+
+(add-act-r-command "set-error-for-gait-device" 'set-error-for-gait-device)
+
+
+(defun set-error-for-wearable-device (mod dev)
+  (declare (ignore dev))
+  (setf (wearable-module-error mod) t)
+  )
+
+
+
+
+;;;
+;;; update motor module
+;;;
+(defstyle respond-to-gait-error () respond-error)
+
+(defmethod feat-differences ((f1 respond-to-gait-error) (f2 respond-to-gait-error))
+  (let ((count 0))
+    (unless (equal (respond-error f1) (respond-error f2))
+      (incf count))
+    count))
+
+(defmethod compute-exec-time ((m motor-module) (self respond-to-gait-error))
+  0)
+
+(defmethod compute-finish-time ((m motor-module) (self respond-to-gait-error))
+  (+ 0 (exec-time self)))
+
+(defmethod queue-output-events ((m motor-module) (self respond-to-gait-error))
+  (let* ((wearable-mod (get-module wearable))
+	 (dev 'gait)
+	 (gamma-scale (wearable-module-gait-scale wearable-mod))
+	 (error-rate (wearable-module-gait-force-rate wearable-mod))
+	 (time-data (wearable-module-exec-time-data wearable-mod))
+	 (next-time 0))
+
+    (setf (wearable-module-error wearable-mod) nil)
+
+    (unless (> error-rate 0) (setf error-rate 1))
+    
+    (setf next-time (predict-next-wearable-error-time time-data error-rate gamma-scale))
+
+    (schedule-event-relative next-time
+			     'set-error-for-wearable-device
+			     :params (list wearable-mod dev))
+  ))
+
+
+;;;
+;;; ADDITIONAL FUNCTIONS!!
+;;;
+
+(defun gamma-distribution (shape scale)
+  ; Code to sample values using gamma distribution
+  ; This function is a simplified example
+  ; sampling a real gamma distribution requires more complex logic.
+  (let ((u (random 1.0)))
+    (* (- (/ (log u) shape)) scale)))
+
+(defun predict-next-wearable-error-time (execution-time error-rate gamma-scale)
+  (let* ((avg-error-interval (/ execution-time error-rate))
+         ; Shape paramter = avg. error rate
+         (shape avg-error-interval)
+         (scale gamma-scale))
+    (gamma-distribution shape scale)))
