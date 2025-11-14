@@ -2,6 +2,9 @@
 
 cd "$(dirname "$0")/.."
 
+unzip quicklisp.zip -y
+unzip wde.zip -y
+
 # Delete all .fasl files for different sbcl versions
 find . -name "*.fasl" -type f -delete
 
