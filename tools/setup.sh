@@ -14,8 +14,8 @@ if [ -d ".venv" ]; then
     rm -rf .venv
 fi
 
-# Install sbcl if not installed
-sudo apt-get install -y sbcl
+# Install wearable usability service (ACT-R)
+sudo apt-get install -y sbcl tmux
 
 # Setup for frontend Python environment
 python3 -m venv .venv
