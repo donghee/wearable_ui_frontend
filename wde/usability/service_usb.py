@@ -28,16 +28,4 @@ class UsabilityGraph(Resource):
         noise = 5
         img = draw_usability_graph(timeout, [task, "adaptive"], age, force, noise)
 
-        # 이미지 객체를 base64로 변환
-        if hasattr(img, "save"):
-            buf = BytesIO()
-            img.save(buf, format='PNG')
-            img_bytes = buf.getvalue()
-        else:
-            # img is already BytesIO
-            img_bytes = img.getvalue()
-
-        img_base64 = base64.b64encode(img_bytes).decode('utf-8')
-        img_url = f"data:image/png;base64,{img_base64}"
-
-        return {"image": img_url}
+        return send_file(img, mimetype='image/png')

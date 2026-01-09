@@ -39,29 +39,71 @@ offset_value = 0.01
 offset_matrix = np.array([[0, 0], [+offset_value, +offset_value], [+offset_value, -offset_value], [-offset_value, +offset_value], [-offset_value, -offset_value]])
 
 
-def case(m):
+
+#  input_parameter = {
+#      'L_h_u': 0.2817, # human upper arm length[m]
+#      'm_h_u': 1.9783, # human upper arm weight[kg]
+#      'G_h_u': 0.4228, # human upper arm gravity ratio
+#      'L_h_f': 0.2689, # human forearm length[m]
+#      'm_h_f': 1.1826, # human forearm weight[kg]
+#      'G_h_f': 0.4574, # human forearm gravity ratio
+#      'K_u': 10000, # human upper arm shear stiffness[N/m]
+#      'K_f': 10000, # human forearm shear stiffness[N/m]
+#      'K_t_u': 10000, # human upper arm torsion stiffness[N/m]
+#      'K_t_f': 10000, # human forearm torsion stiffness[N/m]
+#      'L_d_u': 0.2, # device upper arm length[m]
+#      'm_d_u': 2, # device upper arm weight[kg]
+#      'G_d_u': 0.5, # robot upper arm gravity ratio
+#      'L_d_f': 0.2, # device forarm length[m]
+#      'm_d_f': 2, # device forearm weight[kg]
+#      'G_d_f': 0.5, # robot forearm gravity ratio
+#  }
+
+def case(m, input_parameter):
+    print(f'case {m} calculation start')
+    print(input_parameter)
+
+    L_h_u = input_parameter['L_h_u']
+    L_h_f = input_parameter['L_h_f']
+    L_d_u = input_parameter['L_d_u']
+    L_d_f = input_parameter['L_d_f']
+
+    m_h_u = input_parameter['m_h_u']
+    m_h_f = input_parameter['m_h_f']
+    m_d_u = input_parameter['m_d_u']
+    m_d_f = input_parameter['m_d_f']
+
+    G_h_u = input_parameter['G_h_u']
+    G_h_f = input_parameter['G_h_f']
+    G_d_u = input_parameter['G_d_u']
+    G_d_f = input_parameter['G_d_f']
+
+    K_u = input_parameter['K_u']
+    K_f = input_parameter['K_f']
+    K_t_u = input_parameter['K_t_u']
+    K_t_f = input_parameter['K_t_f']
     
     # constant value 73kg, 1741mm, male
-
-    L_h_u = 0.2817 # human upper arm length[m]
-    L_h_f = 0.2689 # human forearm length[m]
-    L_d_u = 0.2 # device upper arm length[m]
-    L_d_f = 0.2 # device forarm length[m]
-
-    m_h_u = 1.9783 # human upper arm weight[kg]
-    m_h_f = 1.1826 # human forearm weight[kg]
-    m_d_u = 2 # device upper arm weight[kg]
-    m_d_f = 2 # device forearm weight[kg]
-
-    G_h_u = 0.4228 # human upper arm gravity ratio
-    G_h_f = 0.4574 # human forearm gravity ratio
-    G_d_u = 0.5 # robot upper arm gravity ratio
-    G_d_f = 0.5 # robot forearm gravity ratio
-
-    K_u = 10000 # human upper arm shear stiffness[N/m]
-    K_f = 10000 # human forearm shear stiffness[N/m]
-    K_t_u = 10000 # human upper arm torsion stiffness[N/m]
-    K_t_f = 10000 # human forearm torsion stiffness[N/m]
+    #  L_h_u = 0.2817 # human upper arm length[m]
+    #  L_h_f = 0.2689 # human forearm length[m]
+    #  L_d_u = 0.2 # device upper arm length[m]
+    #  L_d_f = 0.2 # device forarm length[m]
+    #
+    #  m_h_u = 1.9783 # human upper arm weight[kg]
+    #  m_h_f = 1.1826 # human forearm weight[kg]
+    #  m_d_u = 2 # device upper arm weight[kg]
+    #  m_d_f = 2 # device forearm weight[kg]
+    #
+    #  G_h_u = 0.4228 # human upper arm gravity ratio
+    #  G_h_f = 0.4574 # human forearm gravity ratio
+    #  G_d_u = 0.5 # robot upper arm gravity ratio
+    #  G_d_f = 0.5 # robot forearm gravity ratio
+    #
+    #  K_u = 10000 # human upper arm shear stiffness[N/m]
+    #  K_f = 10000 # human forearm shear stiffness[N/m]
+    #  K_t_u = 10000 # human upper arm torsion stiffness[N/m]
+    #  K_t_f = 10000 # human forearm torsion stiffness[N/m]
+ 
     q_u_0 = 0 # initial value of human upper arm deg[deg]
     q_f_0 = 0 # initial value of human forearm deg[deg]
 
@@ -229,15 +271,15 @@ def G():
 
     return totalgraph_img
 
-def totalgraph():
+def totalgraph(input_parameter):
     for m in range(1,6):
-        case(m)
+        case(m, input_parameter)
     return G()
 
 def totalscore():
-    for m in range(1,6):
-        case(m)
-
+    #  for m in range(1,6):
+    #      case(m)
+    #
     G0 = np.loadtxt(CSV_PATH + '/score0.txt')
     G1 = np.loadtxt(CSV_PATH + '/score1.txt')
     G2 = np.loadtxt(CSV_PATH + '/score2.txt')

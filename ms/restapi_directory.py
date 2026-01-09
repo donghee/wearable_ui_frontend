@@ -32,6 +32,17 @@ project_fields = directory_ns.model('Project', {
     'reg_date': fields.String(description='등록 날짜'),
 })
 
+def read_result_file(patient_name):
+    result_file = os.path.join(SHARED_DIR, f"{patient_name}", "result.csv")
+    if os.path.isfile(result_file):
+        try:
+            with open(result_file, "r", encoding="utf-8") as f:
+                content = f.read()
+            return content
+        except Exception as e:
+            return None
+    return None
+
 @directory_ns.route("/action/<string:action_type>")
 class PatientAction(Resource):
     def post(self, action_type):
@@ -40,16 +51,24 @@ class PatientAction(Resource):
         xml = data.get("xml", "")
         target = os.path.join(SHARED_DIR,f"{patient['name']}", f"{patient['name']}.xml")
         result = 2
+        
+        result_content = ""
 
         try:
             if action_type == "access":
                 try:
                     update_project(patient['no'], {"last_accessed": time.strftime('%Y-%m-%d %H:%M:%S')})
                     with open(os.path.join(PARENT_DIR, "Index.dat"), "w", encoding="utf-8") as f:
-                        f.write(f"{patient['name']}\n2\n2")
+                        f.write(f"{patient['name']}\n2\n2")                        
+                        
+                    result_content = read_result_file(patient['name'])
+                    
+                    if result_content is None:
+                        result_content = ""
+                        
                 except Exception as e:
                     return {"error": f"Failed to write Index.dat: {str(e)}"}, 500
-                return {"success": True, "action": action_type}
+                return {"success": True, "action": action_type, "result_content": result_content}
 
             elif action_type == "start":
                 try:
@@ -176,7 +195,7 @@ class DirectoryList(Resource):
             if entry.is_dir():
                 folders.append({"name": entry.name, "path": entry.path})
             elif entry.is_file():
-                files.append({"name": entry.name, "path": entry.path})
+                files.append({"name": entry.name, "path": os.path.dirname(entry.path)})
         return {"folders": folders, "files": files}
     
 
@@ -212,6 +231,31 @@ class CreateFile(Resource):
             with open(target, "w", encoding="utf-8") as f:
                 f.write(content)
             return {"success": True, "path": target}
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+
+@directory_ns.route("/update-file")
+class UpdateFile(Resource):
+    def post(self):
+        
+        data = request.json or {}
+        name = data.get("name")
+        path = data.get("path", "")
+        rename = data.get("rename", "")
+        if not name:
+            return {"error": "'name' is required"}, 400
+        if not rename:
+            return {"error": "'rename' is required"}, 400
+        target = os.path.join(SHARED_DIR, path, name)
+        new_target = os.path.join(SHARED_DIR, path, rename)
+        try:
+            if not os.path.exists(target):
+                return {"error": "File not found"}, 404
+            if os.path.exists(new_target):
+                return {"error": "Destination file already exists"}, 409
+            os.rename(target, new_target)
+            return {"success": True, "path": new_target}
         except Exception as e:
             return {"error": str(e)}, 500
         

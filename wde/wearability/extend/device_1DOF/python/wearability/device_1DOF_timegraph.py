@@ -172,77 +172,77 @@ def timegraph(case, line):
     print('-Total                : ',str(round(Stotal,4)))
 
     # figure 1
-    x = (L_d_f*cos(baselink_angle + q_u)*sin(q_f) + L_d_u*sin(d_d - q_f)*cos(baselink_angle + q_u) + L_d_u*sin(q_f - d_d + q_u)*cos(baselink_angle))/sin(q_f - d_d + q_u)
-    y = (L_d_f*sin(baselink_angle + q_u)*sin(q_f) + L_d_u*sin(d_d - q_f)*sin(baselink_angle + q_u) + L_d_u*sin(q_f - d_d + q_u)*sin(baselink_angle))/sin(q_f - d_d + q_u)
-
-    x_d_u = L_d_u * cos(baselink_angle + 0) 
-    y_d_u = L_d_u * sin(baselink_angle + 0) 
-
-    x_d_f = L_d_f * cos(baselink_angle + d_d)
-    y_d_f = L_d_f * sin(baselink_angle + d_d)
-
-    x_h_f = x + L_h_f * cos(baselink_angle + q_u + h_d)
-    y_h_f = y + L_h_f * sin(baselink_angle + q_u + h_d)
-
-    x_h_u = x + L_h_u * cos(baselink_angle + q_u)
-    y_h_u = y + L_h_u * sin(baselink_angle + q_u)
-
-    txt1 = 'device elbow angle : ' + str(round(degrees(d_d),4)) + '°'
-    txt2 = 'human elbow angle : ' + str(round(degrees(h_d),4)) + '°'
-
-    plt.title('Posture')
-    plt.grid(True)
-    plt.xlabel('X[m]')
-    plt.ylabel('Y[m]')
-    plt.xticks(np.arange(-0.5, 0.5, 0.1))
-    plt.xlim([-0.5, 0.5])
-    plt.yticks(np.arange(-0.4, 0.4, 0.1))
-    plt.ylim([-0.4, 0.4])
-    plt.plot([0, x_d_f], [0, y_d_f], color='black', linewidth=1)
-    plt.plot([x, x_h_f], [y, y_h_f], color='green', linewidth=1)
-    plt.plot([0, x_d_u], [0, y_d_u], color='black', linewidth=1)
-    plt.plot([x, x_h_u], [y, y_h_u], color='green', linewidth=1)
-    plt.plot(x, y, 'g.', markersize=15)
-    plt.plot(x_d_f, y_d_f, 'g.', markersize=15)
-    plt.plot(x_d_u, y_d_u, 'g.', markersize=15)
-    plt.plot(0, 0, 'k.', markersize=15)
-    plt.text(-0.49,-0.34,txt1)
-    plt.text(-0.49,-0.39,txt2)
-    plt.legend(('device','human'))
-
-    figure1_img = BytesIO()
-    plt.savefig(figure1_img, format='png', dpi=72)
-    plt.clf()
-    figure1_img.seek(0)
-
-    
-    # figure 2
-    fig, ax1 = plt.subplots()
-    plt.title('Interaction Force')
-    plt.grid(True)
-    ax1.set_ylabel('moment[Nm]', color = 'red')
-    ax1.set_ylim([-maximum_M, maximum_M])
-    ax2 = ax1.twinx()
-    ax2.set_ylabel('force[N]', color = 'blue')
-    ax2.set_ylim([-maximum_F, maximum_F])
-    x1 = np.arange(4)
-    X1 = ['Mu', 'Fu', 'Mf', 'Ff']
-    Y1 = [Mu, Fu, Mf, Ff]
-    C1 = ['red', 'blue', 'red', 'blue']
-    bar = plt.bar(x1, Y1, color=C1)
-    plt.xticks(x1, X1)
-
-    for rect in bar:
-        height = rect.get_height()
-        if height > 0:
-            plt.text(rect.get_x() + rect.get_width()/2.0, height, '%.4f' % height, ha='center', va='bottom')
-        else:
-            plt.text(rect.get_x() + rect.get_width()/2.0, height, '%.4f' % height, ha='center', va='top')
-
-    figure2_img = BytesIO()
-    plt.savefig(figure2_img, format='png', dpi=72)
-    plt.clf()
-    figure2_img.seek(0)
+    #  x = (L_d_f*cos(baselink_angle + q_u)*sin(q_f) + L_d_u*sin(d_d - q_f)*cos(baselink_angle + q_u) + L_d_u*sin(q_f - d_d + q_u)*cos(baselink_angle))/sin(q_f - d_d + q_u)
+    #  y = (L_d_f*sin(baselink_angle + q_u)*sin(q_f) + L_d_u*sin(d_d - q_f)*sin(baselink_angle + q_u) + L_d_u*sin(q_f - d_d + q_u)*sin(baselink_angle))/sin(q_f - d_d + q_u)
+    #
+    #  x_d_u = L_d_u * cos(baselink_angle + 0)
+    #  y_d_u = L_d_u * sin(baselink_angle + 0)
+    #
+    #  x_d_f = L_d_f * cos(baselink_angle + d_d)
+    #  y_d_f = L_d_f * sin(baselink_angle + d_d)
+    #
+    #  x_h_f = x + L_h_f * cos(baselink_angle + q_u + h_d)
+    #  y_h_f = y + L_h_f * sin(baselink_angle + q_u + h_d)
+    #
+    #  x_h_u = x + L_h_u * cos(baselink_angle + q_u)
+    #  y_h_u = y + L_h_u * sin(baselink_angle + q_u)
+    #
+    #  txt1 = 'device elbow angle : ' + str(round(degrees(d_d),4)) + '°'
+    #  txt2 = 'human elbow angle : ' + str(round(degrees(h_d),4)) + '°'
+    #
+    #  plt.title('Posture')
+    #  plt.grid(True)
+    #  plt.xlabel('X[m]')
+    #  plt.ylabel('Y[m]')
+    #  plt.xticks(np.arange(-0.5, 0.5, 0.1))
+    #  plt.xlim([-0.5, 0.5])
+    #  plt.yticks(np.arange(-0.4, 0.4, 0.1))
+    #  plt.ylim([-0.4, 0.4])
+    #  plt.plot([0, x_d_f], [0, y_d_f], color='black', linewidth=1)
+    #  plt.plot([x, x_h_f], [y, y_h_f], color='green', linewidth=1)
+    #  plt.plot([0, x_d_u], [0, y_d_u], color='black', linewidth=1)
+    #  plt.plot([x, x_h_u], [y, y_h_u], color='green', linewidth=1)
+    #  plt.plot(x, y, 'g.', markersize=15)
+    #  plt.plot(x_d_f, y_d_f, 'g.', markersize=15)
+    #  plt.plot(x_d_u, y_d_u, 'g.', markersize=15)
+    #  plt.plot(0, 0, 'k.', markersize=15)
+    #  plt.text(-0.49,-0.34,txt1)
+    #  plt.text(-0.49,-0.39,txt2)
+    #  plt.legend(('device','human'))
+    #
+    #  figure1_img = BytesIO()
+    #  plt.savefig(figure1_img, format='png', dpi=72)
+    #  plt.clf()
+    #  figure1_img.seek(0)
+    #
+    #
+    #  # figure 2
+    #  fig, ax1 = plt.subplots()
+    #  plt.title('Interaction Force')
+    #  plt.grid(True)
+    #  ax1.set_ylabel('moment[Nm]', color = 'red')
+    #  ax1.set_ylim([-maximum_M, maximum_M])
+    #  ax2 = ax1.twinx()
+    #  ax2.set_ylabel('force[N]', color = 'blue')
+    #  ax2.set_ylim([-maximum_F, maximum_F])
+    #  x1 = np.arange(4)
+    #  X1 = ['Mu', 'Fu', 'Mf', 'Ff']
+    #  Y1 = [Mu, Fu, Mf, Ff]
+    #  C1 = ['red', 'blue', 'red', 'blue']
+    #  bar = plt.bar(x1, Y1, color=C1)
+    #  plt.xticks(x1, X1)
+    #
+    #  for rect in bar:
+    #      height = rect.get_height()
+    #      if height > 0:
+    #          plt.text(rect.get_x() + rect.get_width()/2.0, height, '%.4f' % height, ha='center', va='bottom')
+    #      else:
+    #          plt.text(rect.get_x() + rect.get_width()/2.0, height, '%.4f' % height, ha='center', va='top')
+    #
+    #  figure2_img = BytesIO()
+    #  plt.savefig(figure2_img, format='png', dpi=72)
+    #  plt.clf()
+    #  figure2_img.seek(0)
 
     # figure 3
     df = pd.DataFrame({
@@ -296,10 +296,13 @@ def timegraph(case, line):
     figure3_img.seek(0)
 
     # timegraph
-    timegraph_img = Image.new("RGB", (1300, 345))
-    timegraph_img.paste(Image.open(figure3_img), (900, 0))
-    timegraph_img.paste(Image.open(figure2_img), (450, 0))
-    timegraph_img.paste(Image.open(figure1_img), (000, 0))
+#    timegraph_img = Image.new("RGB", (1300, 345))
+#    timegraph_img.paste(Image.open(figure3_img), (900, 0))
+#    timegraph_img.paste(Image.open(figure2_img), (450, 0))
+#    timegraph_img.paste(Image.open(figure1_img), (000, 0))
+
+    timegraph_img = Image.new("RGB", (450, 345))
+    timegraph_img.paste(Image.open(figure3_img), (000, 0))
 
     timegraph_img_bytes = BytesIO()
     timegraph_img.save(timegraph_img_bytes, format='png')

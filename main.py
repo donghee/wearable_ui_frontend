@@ -92,4 +92,4 @@ if __name__ == "__main__":
     observer_thread = threading.Thread(target=start_observer, daemon=True)
     observer_thread.start()
     
-    app.run(host="0.0.0.0", port=PORT, debug=False)
+    app.run(host="0.0.0.0", port=PORT, debug=True)
