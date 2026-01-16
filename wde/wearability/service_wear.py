@@ -5,7 +5,7 @@ from io import BytesIO
 import base64
 
 from .extend.device_1DOF.python.wearability.device_1DOF_timegraph import timegraph
-from .extend.device_1DOF.python.wearability.device_1DOF_totalgraph import totalgraph
+from .extend.device_1DOF.python.wearability.device_1DOF_totalgraph import totalgraph, totalscore
 
 wearability_ns = Namespace("wearability", path="/api/wearability", description="Wearability service")
 
@@ -86,6 +86,18 @@ class WearabilityTotalGraph(Resource):
         img = totalgraph(input_parameter)
         return send_file(img, mimetype='image/png')
 
+@wearability_ns.route("/score")
+class WearabilityScore(Resource):
+    def get(self):
+        user_id = request.args.get("user_id", None)
+        selected_patient = read_index_dat(index_dat)
+        name = selected_patient['name']
+        xml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../Patient/", name, name + ".xml")
+        print(f"Loading model from: {xml_path}")
+        input_parameter = load_model(xml_path)
+        total_score = totalscore(input_parameter)
+        result = {"score": total_score * 10, "user_id": user_id}
+        return result
 
 @wearability_ns.route("/graph/time/<int:wear_case>/<int:line>")
 class WearabilityTimeGraph(Resource):

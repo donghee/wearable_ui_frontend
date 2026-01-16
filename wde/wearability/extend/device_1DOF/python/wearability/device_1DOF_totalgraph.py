@@ -39,6 +39,7 @@ offset_value = 0.01
 offset_matrix = np.array([[0, 0], [+offset_value, +offset_value], [+offset_value, -offset_value], [-offset_value, +offset_value], [-offset_value, -offset_value]])
 
 
+g_total_score = 0
 
 #  input_parameter = {
 #      'L_h_u': 0.2817, # human upper arm length[m]
@@ -216,6 +217,7 @@ def G():
     # Calculate the total score
     total_scores = [total_score_case0, total_score_case1, total_score_case2, total_score_case3, total_score_case4]
     total_score = np.mean(total_scores)
+    g_total_score = total_score
     minimum_value = np.argmin(total_scores)
 
     # Create a data table and save it to a CSV file
@@ -276,10 +278,9 @@ def totalgraph(input_parameter):
         case(m, input_parameter)
     return G()
 
-def totalscore():
-    #  for m in range(1,6):
-    #      case(m)
-    #
+def totalscore(input_parameter):
+    for m in range(1,6):
+        case(m, input_parameter)
     G0 = np.loadtxt(CSV_PATH + '/score0.txt')
     G1 = np.loadtxt(CSV_PATH + '/score1.txt')
     G2 = np.loadtxt(CSV_PATH + '/score2.txt')
@@ -298,17 +299,18 @@ def totalscore():
     # Calculate the total score
     total_scores = [total_score_case0, total_score_case1, total_score_case2, total_score_case3, total_score_case4]
     total_score = np.mean(total_scores)
+    total_score = total_score if g_total_score == 0 else g_total_score
     minimum_value = np.argmin(total_scores)
 
     # Create a data table and save it to a CSV file
-    data = {
-        'Time': duration_matrix ,
-        'Angle': input_angle,
-        'Score': All[minimum_value]
-    }
-    df = pd.DataFrame(data)
-    df.to_csv(CSV_PATH + '/output_expression.csv', index=False)
+    #data = {
+    #    'Time': duration_matrix ,
+    #    'Angle': input_angle,
+    #    'Score': All[minimum_value]
+    #}
+    #df = pd.DataFrame(data)
+    #df.to_csv(CSV_PATH + '/output_expression.csv', index=False)
 
-    return round(total_score,4)
+    return round(total_score,1)
 
 # totalgraph()

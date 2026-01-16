@@ -102,10 +102,14 @@ def make_usability_graph (usability):
 
 
 def draw_usability_graph (time, task, age, force, noise):
+    print("draw usability graph called with parameters:")
+    print(age, task, force, noise)
     model_results = run_usability_system(time, task, age, force, noise)
 
     usability_values = [model_results[0], model_results[1][0], model_results[1][1], model_results[1][2], model_results[1][3]]
     brain_parts_activity = actr.current_connection.evaluate_single("get-total-brain-activity")
+    print("usability values: ", usability_values)
+    print(brain_parts_activity)
 
     return usability_figure_with_brain_data(usability_values, brain_parts_activity[1], brain_parts_activity[2])
 

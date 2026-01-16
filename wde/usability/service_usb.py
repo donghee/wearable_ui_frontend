@@ -6,7 +6,7 @@ import os
 import base64
 
 
-from .extend.usability.run_usability_system import draw_usability_graph
+from .extend.usability.run_usability_system import draw_usability_graph, run_usability_system
 usability_ns = Namespace("usability", path="/api/usability", description="Usability service")
 
 
@@ -16,7 +16,14 @@ class UsabilityScore(Resource):
         # 예시: 쿼리 파라미터 사용 가능
         user_id = request.args.get("user_id", None)
         # 실제 데이터 로직은 필요에 따라 구현
-        result = {"score": 95, "user_id": user_id}
+        timeout = 10
+        error_rate = 5
+        force = int(error_rate)
+        noise = 5
+        task = "adaptive"
+        age = 30
+        total_score = run_usability_system(timeout, [task, "adaptive"], age, force, noise)
+        result = {"score": total_score[0], "user_id": user_id}
         return result
 
 

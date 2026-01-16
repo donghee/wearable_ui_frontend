@@ -47,6 +47,7 @@ api = Api(
 from ms.restapi_directory import directory_ns
 api.add_namespace(directory_ns)
 
+#from wde.interactivity.service_inter import interactivity_ns
 from wde.interactivity.service_inter import interactivity_ns
 from wde.usability.service_usb import usability_ns
 from wde.wearability.service_wear import wearability_ns

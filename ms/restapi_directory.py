@@ -43,6 +43,12 @@ def read_result_file(patient_name):
             return None
     return None
 
+def read_exist_xml(patient_name):
+    xml_file = os.path.join(SHARED_DIR, f"{patient_name}", f"{patient_name}.xml")
+    if os.path.isfile(xml_file):
+        return True
+    return False
+
 @directory_ns.route("/action/<string:action_type>")
 class PatientAction(Resource):
     def post(self, action_type):
@@ -53,6 +59,7 @@ class PatientAction(Resource):
         result = 2
         
         result_content = ""
+        exist_xml = False
 
         try:
             if action_type == "access":
@@ -62,13 +69,23 @@ class PatientAction(Resource):
                         f.write(f"{patient['name']}\n2\n2")                        
                         
                     result_content = read_result_file(patient['name'])
+                    exist_xml = read_exist_xml(patient['name'])
                     
                     if result_content is None:
                         result_content = ""
                         
                 except Exception as e:
                     return {"error": f"Failed to write Index.dat: {str(e)}"}, 500
-                return {"success": True, "action": action_type, "result_content": result_content}
+                return {"success": True, "action": action_type, "result_content": result_content, "exist_xml": exist_xml}
+            
+            elif action_type == "status":
+                result_content = read_result_file(patient['name'])
+                exist_xml = read_exist_xml(patient['name'])
+                    
+                if result_content is None:
+                    result_content = ""
+                    
+                return {"success": True, "action": action_type, "result_content": result_content, "exist_xml": exist_xml}
 
             elif action_type == "start":
                 try:

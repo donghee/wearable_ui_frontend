@@ -1,0 +1,5 @@
+"sensor_position": -1*self.sensor_position()
+"sensor_force": self.sensor_force()
+
+
+위 두가지 파라미터를 result.csv에 추가
