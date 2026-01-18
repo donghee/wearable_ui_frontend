@@ -5,6 +5,12 @@ cd "$(dirname "$0")/.."
 if [ -f /tmp/wearable_ui_frontend.pid ]; then
     echo "Frontend is already running. To restart, please stop it first."
     kill -9 `cat /tmp/wearable_ui_frontend.pid`
+    
+    # killl pid to use 5005 port if exists
+    if lsof -i:5005 -t >/dev/null ; then
+        echo "Killing process on port 5005"
+        lsof -i:5005 -t | xargs kill -9
+    fi
 fi
 
 # Run wearable usability service

@@ -1,27 +1,18 @@
 from flask import jsonify, request, send_file
 from flask_restx import Namespace, Resource
 from io import BytesIO
-
 import base64
+import os
+import xml.etree.ElementTree as ET
 
 from .extend.device_1DOF.python.wearability.device_1DOF_timegraph import timegraph
 from .extend.device_1DOF.python.wearability.device_1DOF_totalgraph import totalgraph, totalscore
 
 wearability_ns = Namespace("wearability", path="/api/wearability", description="Wearability service")
 
-import os 
-import xml.etree.ElementTree as ET
-
 index_dat = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../Index.dat")
 print (f"Index.dat path: {index_dat}")
 
-#  user_xml_path = os.path.join(xml_dir, "assets", "myoelbow_1dof6muscles_1dofexo_body_revised_2.xml")
-#  print(user_xml_path)
-#  root = ET.parse(user_xml_path).getroot()
-#  body_ = root.find("worldbody").find("body").find("body").find("body")
-#  user_attrib = body_.attrib.get('user').split(' ')
-#  print(f"User attribute: {user_attrib}")
-#  self.V_gain = float(user_attrib[0])
 
 def load_model(xml_path):
     root = ET.parse(xml_path).getroot()
@@ -75,9 +66,21 @@ class WearabilityGetPatientInfo(Resource):
         selected_patient.update(user_attributes)
         return jsonify(selected_patient)
 
-@wearability_ns.route("/graph/total")
+#  @wearability_ns.route("/graph/total")
+#  class WearabilityTotalGraph(Resource):
+#      def get(self):
+#          selected_patient = read_index_dat(index_dat)
+#          name = selected_patient['name']
+#          xml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../Patient/", name, name + ".xml")
+#          print(f"Loading model from: {xml_path}")
+#          input_parameter = load_model(xml_path)
+#          img = totalgraph(input_parameter)
+#          return send_file(img, mimetype='image/png')
+
+# TODO fix url to use /graph/total instead of graph/time
+@wearability_ns.route("/graph/time/<int:wear_case>/<int:line>")
 class WearabilityTotalGraph(Resource):
-    def get(self):
+    def get(self, wear_case, line):
         selected_patient = read_index_dat(index_dat)
         name = selected_patient['name']
         xml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../Patient/", name, name + ".xml")
@@ -93,21 +96,20 @@ class WearabilityScore(Resource):
         selected_patient = read_index_dat(index_dat)
         name = selected_patient['name']
         xml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../Patient/", name, name + ".xml")
-        print(f"Loading model from: {xml_path}")
         input_parameter = load_model(xml_path)
         total_score = totalscore(input_parameter)
-        result = {"score": total_score * 10, "user_id": user_id}
+        result = {"score": total_score * 100, "user_id": user_id}
         return result
 
-@wearability_ns.route("/graph/time/<int:wear_case>/<int:line>")
-class WearabilityTimeGraph(Resource):
-    def get(self, wear_case, line):
-        img = timegraph(int(wear_case), int(line))
+#  @wearability_ns.route("/graph/time/<int:wear_case>/<int:line>")
+#  class WearabilityTimeGraph(Resource):
+#      def get(self, wear_case, line):
+#          img = timegraph(int(wear_case), int(line))
+#
+#          return send_file(img, mimetype='image/png')
 
-        return send_file(img, mimetype='image/png')
-
-@wearability_ns.route("/graph/time2/<int:wear_case>/<int:line>")
-class WearabilityTimeGraph2(Resource):
-    def get(self, wear_case, line):
-        img = timegraph(int(wear_case), int(line))
-        return send_file(img, mimetype='image/png')
+#  @wearability_ns.route("/graph/time2/<int:wear_case>/<int:line>")
+#  class WearabilityTimeGraph2(Resource):
+#      def get(self, wear_case, line):
+#          img = timegraph(int(wear_case), int(line))
+#          return send_file(img, mimetype='image/png')

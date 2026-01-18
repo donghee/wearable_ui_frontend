@@ -221,13 +221,13 @@ def G():
     minimum_value = np.argmin(total_scores)
 
     # Create a data table and save it to a CSV file
-    data = {
-        'Time': duration_matrix ,
-        'Angle': input_angle,
-        'Score': All[minimum_value]
-    }
-    df = pd.DataFrame(data)
-    df.to_csv(CSV_PATH + '/output_expression.csv', index=False)
+    #  data = {
+    #      'Time': duration_matrix ,
+    #      'Angle': input_angle,
+    #      'Score': All[minimum_value]
+    #  }
+    #  df = pd.DataFrame(data)
+    #  df.to_csv(CSV_PATH + '/output_expression.csv', index=False)
 
     # fig4 text
 
