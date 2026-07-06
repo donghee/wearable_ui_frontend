@@ -1,17 +1,25 @@
 # inter_score.py
 #
-# Drop-in replacement for the previous SVR-based scorer.
-# ONLY the scoring algorithm changed: the unstable SVR model
-# (svr_y_score_model.joblib, trained on 24 samples, gamma=100/C=1000) is replaced
-# by the ORIGINAL deterministic, torque-based evaluation ported from
-#   https://github.com/donghee/wde-interactivity  (Module A).
+# Deterministic, engagement-based interactivity scorer.
 #
-# Everything else (the inter_graph() function and service_inter.py) is unchanged.
+# Previous versions (SVR model, then per-state torque min-max normalization)
+# collapsed to near-identical scores on the M2/M6 trials: the min-max bounds
+# were calibrated on a different torque scale (~+-0.8 N.m), so the new trials
+# (human_torque ~1-10 N.m) all saturated at 1.0 and the scores only differed
+# by ~5 points. That version also ignored the signals that actually separate
+# conditions (motor cooperation, interaction power).
 #
-# Why: the SVR score swung 5-8 points under tiny sensor noise (non-reproducible).
-# This score is deterministic -- identical input + calibration -> identical score.
+# This version scores "interactivity" as the ASSISTED POWER RATIO: of the
+# mechanical power the human delivers (|human_torque * angular_velocity|), what
+# fraction occurs while the motor is actively assisting (motor torque in the
+# same direction as the human torque). One parameter-free number in [0, 100]
+# that rewards, jointly:
+#   - participation : larger human_torque -> more weight
+#   - power transfer: faster motion (angular_velocity) -> more weight
+#   - cooperation   : motor torque agrees in sign -> counts as assisted
+#
+# Same input + code -> identical score (pure arithmetic, no model, no RNG).
 
-import json
 import os
 
 import numpy as np
@@ -23,12 +31,11 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_CALIBRATION = os.path.join(HERE, "calibration.json")
 
 # Column-name aliases so both the simulation (augmented) and physical schemas work.
 _TORQUE_COLS = ("human_torque", "Human_Torque", "HumanTorque")
+_MOTOR_COLS = ("motor_torque", "Motor_Torque", "MotorTorque")
 _VELOCITY_COLS = ("angular_velocity", "Angular_Velocity")
-_STATE_COLS = ("U_Status", "State", "state")
 
 
 def _resolve(df, candidates):
@@ -39,87 +46,51 @@ def _resolve(df, candidates):
     return None
 
 
-def load_calibration(path=DEFAULT_CALIBRATION):
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def infer_state(df):
+def score_dataframe(df):
     """
-    Per-sample motion state ('Flexion' / 'Extension').
+    Assisted power ratio in [0, 100] for a single loaded trial.
 
-    Priority: explicit State column (physical 'U_Status') -> sign of
-    angular_velocity (simulation) -> sign of the elbow-angle step change.
+        power_i    = |human_torque_i * angular_velocity_i|
+        assisted_i = 1 if sign(human_torque_i) == sign(motor_torque_i) else 0
+        score      = 100 * sum(assisted_i * power_i) / sum(power_i)
     """
-    state_col = _resolve(df, _STATE_COLS)
-    if state_col is not None:
-        s = df[state_col].astype(str).str.strip().str.capitalize()
-        return np.where(s.isin(["Flexion", "Extension"]), s, "Flexion")
-
-    vel_col = _resolve(df, _VELOCITY_COLS)
-    if vel_col is not None:
-        return np.where(df[vel_col].to_numpy() < 0, "Flexion", "Extension")
-
-    angle_col = _resolve(df, ("elbow_angle_rad", "sensor_position", "Elbow Angle", "Angle"))
-    if angle_col is None:
+    tcol = _resolve(df, _TORQUE_COLS)
+    mcol = _resolve(df, _MOTOR_COLS)
+    vcol = _resolve(df, _VELOCITY_COLS)
+    missing = [name for name, col in
+               (("human_torque", tcol), ("motor_torque", mcol),
+                ("angular_velocity", vcol)) if col is None]
+    if missing:
         raise KeyError(
-            "Cannot determine motion state: need one of "
-            f"{_STATE_COLS} or {_VELOCITY_COLS} or an angle column."
-        )
-    d_angle = np.gradient(df[angle_col].to_numpy(dtype=float))
-    return np.where(d_angle < 0, "Flexion", "Extension")
-
-
-def score_dataframe(df, calib):
-    """
-    Compute the 0-100 interactivity score for a single loaded trial.
-
-    For each sample, normalize human_torque to [0,1] against per-state bounds
-    (lo, hi) with the per-state direction, clip, average, x100:
-
-        Flexion   : (human_torque - lo) / (hi - lo)        # higher torque -> higher
-        Extension : (hi - human_torque) / (hi - lo)        # higher torque -> lower
-    """
-    torque_col = _resolve(df, _TORQUE_COLS)
-    if torque_col is None:
-        raise KeyError(
-            "No human-torque column found in result.csv; expected one of "
-            f"{_TORQUE_COLS}. The simulator must output human_torque."
+            f"result.csv is missing required column(s) {missing}; "
+            "the simulator must output human_torque, motor_torque and angular_velocity."
         )
 
-    torque = df[torque_col].to_numpy(dtype=float)
-    state = infer_state(df)
-    states_cfg = calib["states"]
+    human = df[tcol].to_numpy(dtype=float)
+    motor = df[mcol].to_numpy(dtype=float)
+    vel = df[vcol].to_numpy(dtype=float)
 
-    per_sample = np.empty(len(df), dtype=float)
-    for i, (t, s) in enumerate(zip(torque, state)):
-        cfg = states_cfg.get(str(s), states_cfg["Flexion"])
-        lo, hi = cfg["lo"], cfg["hi"]
-        span = hi - lo
-        if span == 0:
-            per_sample[i] = 0.5
-            continue
-        frac = (t - lo) / span
-        if cfg["direction"] == "higher_torque_lower_score":
-            frac = 1.0 - frac
-        per_sample[i] = frac
+    power = np.abs(human * vel)
+    assisted = (np.sign(human) == np.sign(motor)).astype(float)
 
-    per_sample = np.clip(per_sample, 0.0, 1.0)
-    return float(np.nanmean(per_sample) * 100.0)
+    total = power.sum()
+    if total == 0:
+        return 0.0
+    return float(100.0 * np.sum(assisted * power) / total)
 
 
 def infer_y_score(result_csv_path, model_path=None, n_steps=None,
-                  calibration_path=DEFAULT_CALIBRATION):
+                  calibration_path=None):
     """
-    Deterministic torque-based interactivity score in [0, 100].
+    Deterministic interactivity score in [0, 100].
 
-    Signature is kept compatible with the previous SVR version so that
-    service_inter.py does not change: `model_path` and `n_steps` are accepted
-    and ignored (no joblib model is loaded any more).
+    Signature is kept compatible with the previous versions so that
+    service_inter.py does not change: `model_path`, `n_steps` and
+    `calibration_path` are accepted and ignored (the score needs no model
+    and no calibration file any more).
     """
     df = pd.read_csv(result_csv_path)
-    calib = load_calibration(calibration_path)
-    return score_dataframe(df, calib)
+    return score_dataframe(df)
 
 
 def inter_graph(result_csv_path):
