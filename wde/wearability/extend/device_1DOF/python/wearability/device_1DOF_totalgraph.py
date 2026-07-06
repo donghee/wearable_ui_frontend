@@ -115,7 +115,7 @@ def case(m, input_parameter):
     sc = f'score{m - 1}.txt'
 
     # Open and write to the 'score.txt' file
-    ID= open(sc,"w+")
+    ID= open(CSV_PATH + '/' + sc,"w+")
     a = 0
 
     # Read data from the 'case?.txt' file
